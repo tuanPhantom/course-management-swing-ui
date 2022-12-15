@@ -18,7 +18,7 @@ https://drive.google.com/drive/folders/12ZbHg7MRTInRFU9tkUYIPtQkLRQFvbmo?usp=sha
 ## How to use
 
 This program <strong>requires</strong> the pre-defined database that has been placed in the same folder with this readme
-file. Make sure the database file named `database.sqlite3` is in the correct path: `src/a2_1901040191/database.sqlite3`
+file. Make sure the database file named `database.sqlite3` is in the default path.
 
 Moreover, When running the program, make sure check-box is ticked before use Add/Update/Delete button.
 
@@ -66,7 +66,6 @@ The SOLID acronym represents the following:
 ### Look and Feel
 
 This program uses the FlatLaf, a modern open-source cross-platform Look and Feel for Java Swing desktop applications.
-The source code of FlatLaf has been repacked in store in `util` folder.
 
 The FlatLaf homepage and source code: <br/>
 https://www.formdev.com/flatlaf/ <br/>

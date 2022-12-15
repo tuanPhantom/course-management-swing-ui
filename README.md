@@ -1,4 +1,4 @@
-# Course Management Program
+# Course Management Program - Desktop App
 
 Author: Phan Quang Tuan
 

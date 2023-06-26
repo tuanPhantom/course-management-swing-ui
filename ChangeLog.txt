@@ -1,3 +1,9 @@
+v1.2: three-tier architecture pattern
+Release date: 27/06/2023
+Level: Major update
+- change the architecture type from the Repository pattern to the Three-tier architecture pattern
+- remove the batch map, still maintain the batch processing ability.
+
 v1.1: connection pooling
 Release date: 26/06/2023
 Level: Major update

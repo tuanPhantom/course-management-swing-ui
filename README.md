@@ -16,7 +16,7 @@ https://drive.google.com/drive/folders/12ZbHg7MRTInRFU9tkUYIPtQkLRQFvbmo?usp=sha
 ![img.png](readme_img/1.png)
 
 ## What's new
-V1.1 is released!
+V1.2 is released!
 
 Read the file `ChangeLog.txt` for details.
 
@@ -39,9 +39,10 @@ button to avoid unconfirmed text field data loss.
 ### Technologies & patterns that have been used:
 
 - Java Swing API
+- <strong>Three-tier architecture pattern</strong>
 - MVC Pattern
-- <strong>Repository pattern for JDBC</strong>
 - Data Access Object (DAO) Pattern for JDBC
+- Connection Pooling with HikariCP
 - Batch Processing in JDBC
 - SQLite database version 3
 - Data Transfer Objects (DTO) Pattern

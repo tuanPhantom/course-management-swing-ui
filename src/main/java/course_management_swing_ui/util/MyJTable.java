@@ -67,7 +67,7 @@ public class MyJTable extends JTable {
     }
 
     /**
-     * always called when the table model is changed
+     * always called when the table models is changed
      * @effects <pre>
      *     set currentSetting = new 2d array[][]
      *     copy value of first row of columnSetting to all element in currentSetting

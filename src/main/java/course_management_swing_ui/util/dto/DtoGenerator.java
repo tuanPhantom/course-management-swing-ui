@@ -1,9 +1,9 @@
 package course_management_swing_ui.util.dto;
 
-import course_management_swing_ui.model.ElectiveModule;
-import course_management_swing_ui.model.Enrollment;
-import course_management_swing_ui.model.Module;
-import course_management_swing_ui.model.Student;
+import course_management_swing_ui.models.ElectiveModule;
+import course_management_swing_ui.models.Enrollment;
+import course_management_swing_ui.models.Module;
+import course_management_swing_ui.models.Student;
 import course_management_swing_ui.util.ThreadPool;
 
 import java.lang.reflect.Field;

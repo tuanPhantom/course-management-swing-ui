@@ -1,8 +1,8 @@
 package course_management_swing_ui;
 
-import course_management_swing_ui.controller.MainController;
-import course_management_swing_ui.view.ViewManager;
-import course_management_swing_ui.view.MainWindowView;
+import course_management_swing_ui.controllers.MainController;
+import course_management_swing_ui.views.ViewManager;
+import course_management_swing_ui.views.MainWindowView;
 
 /**
  * Requires jdk >= 11
@@ -48,6 +48,5 @@ public class CourseManProg {
             CourseManProg app = new CourseManProg();
             app.display();
         });
-
     }
 }

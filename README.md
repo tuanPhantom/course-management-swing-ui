@@ -15,7 +15,13 @@ https://drive.google.com/drive/folders/12ZbHg7MRTInRFU9tkUYIPtQkLRQFvbmo?usp=sha
 
 ![img.png](readme_img/1.png)
 
+## What's new
+V1.1 is released!
+Read the file `ChangeLog.txt` for details.
+
 ## How to use
+
+Open the project then run the file `CourseManProg.java`.
 
 This program <strong>requires</strong> the pre-defined database that has been placed in the same folder with this readme
 file. Make sure the database file named `database.sqlite3` is in the default path.

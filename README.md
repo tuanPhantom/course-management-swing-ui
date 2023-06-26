@@ -17,6 +17,7 @@ https://drive.google.com/drive/folders/12ZbHg7MRTInRFU9tkUYIPtQkLRQFvbmo?usp=sha
 
 ## What's new
 V1.1 is released!
+
 Read the file `ChangeLog.txt` for details.
 
 ## How to use

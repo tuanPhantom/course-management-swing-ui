@@ -5,9 +5,7 @@ import course_management_swing_ui.views.View;
 
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -16,7 +14,7 @@ import java.util.stream.Collectors;
  */
 public abstract class BaseController extends WindowAdapter implements ActionListener {
     protected View view;
-    public final static List<BaseController> controllers = new ArrayList<>();
+    public final static Set<BaseController> controllers = new HashSet<>();
 
     public BaseController() {
 

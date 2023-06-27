@@ -48,7 +48,7 @@ public class DtoGenerator {
      * @requires o!=null
      * @effects return the DTO of o by recognize all its Fields.
      */
-    private synchronized static Vector<?> getDto(Object o) {
+    private static Vector<?> getDto(Object o) {
         Field[] fields = getAllFields(o).stream()
                 .filter(f -> Arrays.stream(f.getDeclaredAnnotations()).anyMatch(a -> {
                     try {

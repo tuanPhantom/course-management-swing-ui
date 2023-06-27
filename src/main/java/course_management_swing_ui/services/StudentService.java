@@ -6,8 +6,6 @@ import course_management_swing_ui.repositories.DbContext;
 import course_management_swing_ui.repositories.EnrollmentRepository;
 import course_management_swing_ui.repositories.StudentRepository;
 import course_management_swing_ui.repositories.db.DbConnect;
-import course_management_swing_ui.util.exceptions.DuplicateEntityException;
-import course_management_swing_ui.util.exceptions.NotPossibleException;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -15,11 +13,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
  * @author Phan Quang Tuan
- * @version 1.2
+ * @version 1.3
  * @Overview Implementation of Service for Student.
  */
 public class StudentService implements Service<Student, Integer> {
@@ -34,8 +33,8 @@ public class StudentService implements Service<Student, Integer> {
     @Override
     public void add(Student obj) {
         try (Connection conn = DbConnect.getConnection()) {
-            studentRepository.add(obj, conn);
-        } catch (SQLException | DuplicateEntityException e) {
+            studentRepository.add(obj, conn).get();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -50,9 +49,9 @@ public class StudentService implements Service<Student, Integer> {
         try (Connection conn = DbConnect.getConnection()) {
             try {
                 conn.setAutoCommit(false);
-                studentRepository.addAll(objs, conn);
+                studentRepository.addAll(objs, conn).get();
                 conn.commit();
-            } catch (SQLException | DuplicateEntityException e) {
+            } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
             }
@@ -69,8 +68,8 @@ public class StudentService implements Service<Student, Integer> {
     @Override
     public Student findById(Integer id) {
         try (Connection conn = DbConnect.getConnection()) {
-            return studentRepository.findById(id, conn);
-        } catch (SQLException | NotPossibleException e) {
+            return studentRepository.findById(id, conn).get();
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
@@ -85,8 +84,8 @@ public class StudentService implements Service<Student, Integer> {
     public List<Student> findById(Collection<Integer> ids) {
         List<Student> students = new ArrayList<>();
         try (Connection conn = DbConnect.getConnection()) {
-            students.addAll(studentRepository.findById(ids, conn));
-        } catch (SQLException | NotPossibleException e) {
+            students.addAll(studentRepository.findById(ids, conn).get());
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return students;
@@ -100,8 +99,8 @@ public class StudentService implements Service<Student, Integer> {
     public List<Student> findAll() {
         List<Student> students = new ArrayList<>();
         try (Connection conn = DbConnect.getConnection()) {
-            students.addAll(studentRepository.findAll(conn));
-        } catch (SQLException | NotPossibleException e) {
+            students.addAll(studentRepository.findAll(conn).get());
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return students;
@@ -115,8 +114,8 @@ public class StudentService implements Service<Student, Integer> {
     @Override
     public void update(Student obj) {
         try (Connection conn = DbConnect.getConnection()) {
-            studentRepository.update(obj, conn);
-        } catch (SQLException e) {
+            studentRepository.update(obj, conn).get();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -131,9 +130,9 @@ public class StudentService implements Service<Student, Integer> {
         try (Connection conn = DbConnect.getConnection()) {
             try {
                 conn.setAutoCommit(false);
-                studentRepository.update(objs, conn);
+                studentRepository.update(objs, conn).get();
                 conn.commit();
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
             }
@@ -152,14 +151,18 @@ public class StudentService implements Service<Student, Integer> {
         try (Connection conn = DbConnect.getConnection()) {
             try {
                 conn.setAutoCommit(false);
-                studentRepository.delete(obj, conn);
+                List<CompletableFuture<Void>> tasks = new ArrayList<>();
+                CompletableFuture<Void> studentTask = studentRepository.delete(obj, conn);
+                tasks.add(studentTask);
                 Optional<Enrollment> opt = DbContext.enrollmentDbContext.stream().filter(e -> e.getStudent().getNumericalId() == obj.getNumericalId()).findFirst();
                 if (opt.isPresent()) {
                     Enrollment enrollment = opt.get();
-                    enrollmentRepository.delete(enrollment, conn);
+                    CompletableFuture<Void> enTask = enrollmentRepository.delete(enrollment, conn);
+                    tasks.add(enTask);
                 }
+                CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0]));
                 conn.commit();
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
             }
@@ -178,12 +181,13 @@ public class StudentService implements Service<Student, Integer> {
         try (Connection conn = DbConnect.getConnection()) {
             try {
                 conn.setAutoCommit(false);
-                studentRepository.delete(objs, conn);
+                CompletableFuture<Void> studentTask =  studentRepository.delete(objs, conn);
 
                 // delete enrollments
                 List<Integer> numId = objs.stream().map(Student::getNumericalId).collect(Collectors.toList());
                 List<Enrollment> enrollments = DbContext.enrollmentDbContext.stream().filter(e -> numId.contains(e.getStudent().getNumericalId())).collect(Collectors.toList());
-                enrollmentRepository.delete(enrollments, conn);
+                CompletableFuture<Void> enTask = enrollmentRepository.delete(enrollments, conn);
+                CompletableFuture.allOf(studentTask, enTask);
                 conn.commit();
             } catch (SQLException e) {
                 conn.rollback();
@@ -203,8 +207,9 @@ public class StudentService implements Service<Student, Integer> {
         try (Connection conn = DbConnect.getConnection()) {
             try {
                 conn.setAutoCommit(false);
-                studentRepository.deleteAll(conn);
-                enrollmentRepository.deleteAll(conn);
+                CompletableFuture<Void> studentTask = studentRepository.deleteAll(conn);
+                CompletableFuture<Void> enTask = enrollmentRepository.deleteAll(conn);
+                CompletableFuture.allOf(studentTask, enTask);
                 conn.commit();
             } catch (SQLException e) {
                 conn.rollback();

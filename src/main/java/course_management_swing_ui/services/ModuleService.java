@@ -6,8 +6,6 @@ import course_management_swing_ui.repositories.DbContext;
 import course_management_swing_ui.repositories.EnrollmentRepository;
 import course_management_swing_ui.repositories.ModuleRepository;
 import course_management_swing_ui.repositories.db.DbConnect;
-import course_management_swing_ui.util.exceptions.DuplicateEntityException;
-import course_management_swing_ui.util.exceptions.NotPossibleException;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -15,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -25,6 +24,7 @@ import java.util.stream.Collectors;
 public class ModuleService implements Service<Module, String> {
     private final ModuleRepository moduleRepository = new ModuleRepository();
     private final EnrollmentRepository enrollmentRepository = new EnrollmentRepository();
+
     /**
      * add Object to the Database
      * @param obj
@@ -33,8 +33,8 @@ public class ModuleService implements Service<Module, String> {
     @Override
     public void add(Module obj) {
         try (Connection conn = DbConnect.getConnection()) {
-            moduleRepository.add(obj, conn);
-        } catch (SQLException | DuplicateEntityException e) {
+            moduleRepository.add(obj, conn).get();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -49,9 +49,9 @@ public class ModuleService implements Service<Module, String> {
         try (Connection conn = DbConnect.getConnection()) {
             try {
                 conn.setAutoCommit(false);
-                moduleRepository.addAll(objs, conn);
+                moduleRepository.addAll(objs, conn).get();
                 conn.commit();
-            } catch (SQLException | DuplicateEntityException e) {
+            } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
             }
@@ -68,8 +68,8 @@ public class ModuleService implements Service<Module, String> {
     @Override
     public Module findById(String id) {
         try (Connection conn = DbConnect.getConnection()) {
-            return moduleRepository.findById(id, conn);
-        } catch (SQLException | NotPossibleException e) {
+            return moduleRepository.findById(id, conn).get();
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
@@ -84,8 +84,8 @@ public class ModuleService implements Service<Module, String> {
     public List<Module> findById(Collection<String> ids) {
         List<Module> modules = new ArrayList<>();
         try (Connection conn = DbConnect.getConnection()) {
-            modules.addAll(moduleRepository.findById(ids, conn));
-        } catch (SQLException | NotPossibleException e) {
+            modules.addAll(moduleRepository.findById(ids, conn).get());
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return modules;
@@ -99,8 +99,8 @@ public class ModuleService implements Service<Module, String> {
     public List<Module> findAll() {
         List<Module> modules = new ArrayList<>();
         try (Connection conn = DbConnect.getConnection()) {
-            modules.addAll(moduleRepository.findAll(conn));
-        } catch (SQLException | NotPossibleException e) {
+            modules.addAll(moduleRepository.findAll(conn).get());
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return modules;
@@ -114,8 +114,8 @@ public class ModuleService implements Service<Module, String> {
     @Override
     public void update(Module obj) {
         try (Connection conn = DbConnect.getConnection()) {
-            moduleRepository.update(obj, conn);
-        } catch (SQLException e) {
+            moduleRepository.update(obj, conn).get();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -130,9 +130,9 @@ public class ModuleService implements Service<Module, String> {
         try (Connection conn = DbConnect.getConnection()) {
             try {
                 conn.setAutoCommit(false);
-                moduleRepository.update(objs, conn);
+                moduleRepository.update(objs, conn).get();
                 conn.commit();
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
             }
@@ -151,14 +151,18 @@ public class ModuleService implements Service<Module, String> {
         try (Connection conn = DbConnect.getConnection()) {
             try {
                 conn.setAutoCommit(false);
-                moduleRepository.delete(obj, conn);
+                List<CompletableFuture<Void>> tasks = new ArrayList<>();
+                CompletableFuture<Void> moduleTask = moduleRepository.delete(obj, conn);
+                tasks.add(moduleTask);
                 Optional<Enrollment> opt = DbContext.enrollmentDbContext.stream().filter(e -> e.getModule().getCode().equals(obj.getCode())).findFirst();
                 if (opt.isPresent()) {
                     Enrollment enrollment = opt.get();
-                    enrollmentRepository.delete(enrollment, conn);
+                    CompletableFuture<Void> enTask = enrollmentRepository.delete(enrollment, conn);
+                    tasks.add(enTask);
                 }
+                CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0]));
                 conn.commit();
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
             }
@@ -177,14 +181,15 @@ public class ModuleService implements Service<Module, String> {
         try (Connection conn = DbConnect.getConnection()) {
             try {
                 conn.setAutoCommit(false);
-                moduleRepository.delete(objs, conn);
+                CompletableFuture<Void> moduleTask = moduleRepository.delete(objs, conn);
 
                 // delete enrollments
                 List<String> codes = objs.stream().map(Module::getCode).collect(Collectors.toList());
                 List<Enrollment> enrollments = DbContext.enrollmentDbContext.stream().filter(e -> codes.contains(e.getModule().getCode())).collect(Collectors.toList());
-                enrollmentRepository.delete(enrollments, conn);
+                CompletableFuture<Void> enTask = enrollmentRepository.delete(enrollments, conn);
+                CompletableFuture.allOf(moduleTask, enTask);
                 conn.commit();
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
             }
@@ -202,10 +207,11 @@ public class ModuleService implements Service<Module, String> {
         try (Connection conn = DbConnect.getConnection()) {
             try {
                 conn.setAutoCommit(false);
-                moduleRepository.deleteAll(conn);
-                enrollmentRepository.deleteAll(conn);
+                CompletableFuture<Void> moduleTask = moduleRepository.deleteAll(conn);
+                CompletableFuture<Void> enTask = enrollmentRepository.deleteAll(conn);
+                CompletableFuture.allOf(moduleTask, enTask);
                 conn.commit();
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
             }

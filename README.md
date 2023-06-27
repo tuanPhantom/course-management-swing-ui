@@ -16,7 +16,7 @@ https://drive.google.com/drive/folders/12ZbHg7MRTInRFU9tkUYIPtQkLRQFvbmo?usp=sha
 ![img.png](readme_img/1.png)
 
 ## What's new
-V1.2 is released!
+V1.3 is released!
 
 Read the file `ChangeLog.txt` for details.
 
@@ -41,6 +41,7 @@ button to avoid unconfirmed text field data loss.
 - Java Swing API
 - <strong>Three-tier architecture pattern</strong>
 - MVC Pattern
+- <strong>Asynchronous programming</strong>
 - Data Access Object (DAO) Pattern for JDBC
 - Connection Pooling with HikariCP
 - Batch Processing in JDBC

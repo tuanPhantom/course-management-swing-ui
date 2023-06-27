@@ -8,7 +8,7 @@ import java.sql.SQLException;
 
 /**
  * @author Phan Quang Tuan
- * @version 1.1
+ * @version 1.3
  * @Overview A class that provides connection to the database
  */
 public class DbConnect {
@@ -37,7 +37,7 @@ public class DbConnect {
     /**
      * Return a new connection to the database from the connection pool.
      */
-    public synchronized static Connection getConnection() throws SQLException {
+    public static Connection getConnection() throws SQLException {
         return dataSource.getConnection();
     }
 }

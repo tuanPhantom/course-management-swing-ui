@@ -22,8 +22,8 @@ import static course_management_swing_ui.repositories.DbContext.moduleDbContext;
 
 /**
  * @author Phan Quang Tuan
- * @Overview Represents the controllers component, which handles the user interaction as well as logic business of Module
- * entities
+ * @Overview Represents the controllers component, which handles the user interaction as well as logic business of
+ * Module entities
  * @attributes <pre>
  *   View       View
  * </pre>
@@ -48,7 +48,6 @@ public class ModuleController extends BaseController {
 
     /**
      * Handle events of NewModuleView, ListModuleView
-     *
      * @effects <pre>
      * All event's action:
      * Case(s) of NewModuleView
@@ -170,28 +169,28 @@ public class ModuleController extends BaseController {
                             if (edit) {
                                 String code = (String) tm.getValueAt(i, 0);
                                 String name = (String) tm.getValueAt(i, 1);
-                                int semester = (int) tm.getValueAt(i, 2);
+                                //int semester = (int) tm.getValueAt(i, 2);
                                 Object creditObject = tm.getValueAt(i, 3);
                                 int credits = creditObject instanceof Integer ? (int) creditObject : Integer.parseInt((String) creditObject);
                                 Module.ModuleType mt = (Module.ModuleType) tm.getValueAt(i, 4);
-                                moduleDbContext.removeIf(m -> m.getCode().equals(code)); // remove here because module can be switched between two types
+                                //moduleDbContext.removeIf(m -> m.getCode().equals(code)); // remove here because module can be switched between two types  // bug fixed 27/06/23
 
                                 if (mt == Module.ModuleType.ELECTIVE) {
                                     String department = (String) tm.getValueAt(i, 5);
-                                    try {
-                                        // not generating Module.code -> it's safe
-                                        Module m = new ElectiveModule(code, name, semester, credits, department);
-                                        modules.add(m);
-                                    } catch (NotPossibleException ex) {
-                                        ex.printStackTrace();
-                                    }
+                                    // not generating Module.code -> it's safe
+                                    //Module m = new ElectiveModule(code, name, semester, credits, department);
+                                    // but still not clear suffix -> not safe
+                                    ElectiveModule m = (ElectiveModule) moduleService.findById(code);
+                                    m.setName(name);
+                                    m.setCredits(credits);
+                                    m.setDepartment(department);
+                                    modules.add(m);
                                 } else {
-                                    try {
-                                        Module m = new CompulsoryModule(code, name, semester, credits);
-                                        modules.add(m);
-                                    } catch (NotPossibleException ex) {
-                                        ex.printStackTrace();
-                                    }
+                                    //Module m = new CompulsoryModule(code, name, semester, credits);
+                                    CompulsoryModule m = (CompulsoryModule) moduleService.findById(code);
+                                    m.setName(name);
+                                    m.setCredits(credits);
+                                    modules.add(m);
                                 }
                             }
                         }
@@ -266,7 +265,6 @@ public class ModuleController extends BaseController {
 
     /**
      * Get data from the DbContext. More specifically, get all Module and save it to moduleDbContext.
-     *
      * @modifies DbContext.moduleDbContext
      * @effects <pre>
      *      Clear old data from DbContext (Module only)

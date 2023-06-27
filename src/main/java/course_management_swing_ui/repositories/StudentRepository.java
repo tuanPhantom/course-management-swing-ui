@@ -11,13 +11,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static course_management_swing_ui.repositories.DbContext.studentDbContext;
 
 /**
  * @author Phan Quang Tuan
- * @version 1.2
+ * @version 1.3
  * @Overview Implementation of Repository for Student.
  */
 public class StudentRepository implements Repository<Student, Integer> {
@@ -29,13 +31,21 @@ public class StudentRepository implements Repository<Student, Integer> {
      * @effects insert obj into the database only if there is no obj in DbContext
      */
     @Override
-    public synchronized void add(Student obj, Connection conn) throws DuplicateEntityException, SQLException {
-        Optional<Student> opt = studentDbContext.stream().filter(s -> s.getNumericalId() == obj.getNumericalId()).findFirst();
-        if (opt.isEmpty()) {
-            studentDAO.create(obj, conn);
-        } else {
-            throw new DuplicateEntityException("found " + obj + "in DbContext.studentDbContext");
-        }
+    public CompletableFuture<Void> add(Student obj, Connection conn) throws DuplicateEntityException, SQLException {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        CompletableFuture.runAsync(() -> {
+            try {
+                Optional<Student> opt = studentDbContext.stream().filter(s -> s.getNumericalId() == obj.getNumericalId()).findFirst();
+                if (opt.isEmpty()) {
+                    studentDAO.create(obj, conn);
+                } else {
+                    throw new DuplicateEntityException("found " + obj + "in DbContext.studentDbContext");
+                }
+            } catch (SQLException | DuplicateEntityException e) {
+                future.completeExceptionally(e);
+            }
+        }).thenAccept(future::complete);
+        return future;
     }
 
     /**
@@ -45,14 +55,22 @@ public class StudentRepository implements Repository<Student, Integer> {
      * @effects insert obj into the database only if there is no obj in DbContext
      */
     @Override
-    public synchronized void addAll(Collection<Student> objs, Connection conn) throws DuplicateEntityException, SQLException {
-        for (Student obj : objs) {
-            Optional<Student> opt = studentDbContext.stream().filter(s -> s.getNumericalId() == obj.getNumericalId()).findFirst();
-            if (opt.isPresent()) {
-                throw new DuplicateEntityException("found " + obj + "in DbContext.studentDbContext");
+    public CompletableFuture<Void> addAll(Collection<Student> objs, Connection conn) throws DuplicateEntityException, SQLException {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        CompletableFuture.runAsync(() -> {
+            try {
+                for (Student obj : objs) {
+                    Optional<Student> opt = studentDbContext.stream().filter(s -> s.getNumericalId() == obj.getNumericalId()).findFirst();
+                    if (opt.isPresent()) {
+                        throw new DuplicateEntityException("found " + obj + "in DbContext.studentDbContext");
+                    }
+                }
+                studentDAO.create(objs, conn);
+            } catch (SQLException | DuplicateEntityException e) {
+                future.completeExceptionally(e);
             }
-        }
-        studentDAO.create(objs, conn);
+        }).thenAccept(future::complete);
+        return future;
     }
 
     /**
@@ -65,67 +83,139 @@ public class StudentRepository implements Repository<Student, Integer> {
      * </pre>
      */
     @Override
-    public synchronized Student findById(Integer id, Connection conn) throws SQLException, NotPossibleException {
-        Optional<Student> opt = studentDbContext.stream().filter(s -> s.getNumericalId() == id).findFirst();
-        if (opt.isPresent()) {
-            return opt.get();
-        } else {
-            return studentDAO.read(id, conn);
-        }
+    public CompletableFuture<Student> findById(Integer id, Connection conn) throws SQLException, NotPossibleException {
+        CompletableFuture<Student> future = new CompletableFuture<>();
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                Optional<Student> opt = studentDbContext.stream().filter(s -> s.getNumericalId() == id).findFirst();
+                if (opt.isPresent()) {
+                    return opt.get();
+                } else {
+                    return studentDAO.read(id, conn);
+                }
+            } catch (SQLException | NotPossibleException e) {
+                future.completeExceptionally(e);
+            }
+            return null;
+        }).thenAccept(future::complete);
+        return future;
     }
 
     /**
      * @requires all id in ids are in the database /\ conn != null /\ conn is not closed
      */
     @Override
-    public synchronized List<Student> findById(Collection<Integer> ids, Connection conn) throws SQLException, NotPossibleException {
-        List<Student> students = new ArrayList<>();
-        for (Integer id : ids) {
-            students.add(findById(id, conn));
-        }
-        return students;
+    public CompletableFuture<List<Student>> findById(Collection<Integer> ids, Connection conn) throws SQLException, NotPossibleException {
+        CompletableFuture<List<Student>> future = new CompletableFuture<>();
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                List<Student> students = new ArrayList<>();
+                List<CompletableFuture<Student>> tasks = new ArrayList<>();
+                for (Integer id : ids) {
+                    tasks.add(findById(id, conn));
+                }
+                CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0]));
+                for (CompletableFuture<Student> task : tasks) {
+                    students.add(task.get());
+                }
+                return students;
+            } catch (SQLException | NotPossibleException | ExecutionException | InterruptedException e) {
+                future.completeExceptionally(e);
+            }
+            return null;
+        }).thenAccept(future::complete);
+        return future;
     }
 
     @Override
-    public synchronized List<Student> findAll(Connection conn) throws SQLException, NotPossibleException {
-        return studentDAO.all(conn);
+    public CompletableFuture<List<Student>> findAll(Connection conn) throws SQLException, NotPossibleException {
+        CompletableFuture<List<Student>> future = new CompletableFuture<>();
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return studentDAO.all(conn);
+            } catch (SQLException | NotPossibleException e) {
+                future.completeExceptionally(e);
+            }
+            return null;
+        }).thenAccept(future::complete);
+        return future;
     }
 
     /**
      * @requires obj!=null /\ obj is in DbContext /\ conn != null /\ conn is not closed
      */
     @Override
-    public synchronized void update(Student obj, Connection conn) throws SQLException {
-        studentDAO.update(obj, conn);
+    public CompletableFuture<Void> update(Student obj, Connection conn) throws SQLException {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        CompletableFuture.runAsync(() -> {
+            try {
+                studentDAO.update(obj, conn);
+            } catch (SQLException e) {
+                future.completeExceptionally(e);
+            }
+        }).thenAccept(future::complete);
+        return future;
     }
 
     /**
      * @requires obj!=null /\ obj is in DbContext /\ conn != null /\ conn is not closed
      */
     @Override
-    public synchronized void update(Collection<Student> objs, Connection conn) throws SQLException {
-        studentDAO.update(objs, conn);
+    public CompletableFuture<Void> update(Collection<Student> objs, Connection conn) throws SQLException {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        CompletableFuture.runAsync(() -> {
+            try {
+                studentDAO.update(objs, conn);
+            } catch (SQLException e) {
+                future.completeExceptionally(e);
+            }
+        }).thenAccept(future::complete);
+        return future;
     }
 
     /**
      * @requires obj!=null /\ obj is in DbContext /\ conn != null /\ conn is not closed
      */
     @Override
-    public synchronized void delete(Student obj, Connection conn) throws SQLException {
-        studentDAO.delete(obj.getNumericalId(), conn);
+    public CompletableFuture<Void> delete(Student obj, Connection conn) throws SQLException {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        CompletableFuture.runAsync(() -> {
+            try {
+                studentDAO.delete(obj.getNumericalId(), conn);
+            } catch (SQLException e) {
+                future.completeExceptionally(e);
+            }
+        }).thenAccept(future::complete);
+        return future;
     }
 
     /**
      * @requires objs!=null /\ all obj in objs is in DbContext /\ conn != null /\ conn is not closed
      */
     @Override
-    public synchronized void delete(Collection<Student> objs, Connection conn) throws SQLException {
-        List<Integer> ids = objs.stream().map(Student::getNumericalId).collect(Collectors.toList());
-        studentDAO.delete(ids, conn);
+    public CompletableFuture<Void> delete(Collection<Student> objs, Connection conn) throws SQLException {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        CompletableFuture.runAsync(() -> {
+            try {
+                List<Integer> ids = objs.stream().map(Student::getNumericalId).collect(Collectors.toList());
+                studentDAO.delete(ids, conn);
+            } catch (SQLException e) {
+                future.completeExceptionally(e);
+            }
+        }).thenAccept(future::complete);
+        return future;
     }
 
     @Override
-    public synchronized void deleteAll(Connection conn) throws SQLException {
-        studentDAO.clear(conn);
+    public CompletableFuture<Void> deleteAll(Connection conn) throws SQLException {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        CompletableFuture.runAsync(() -> {
+            try {
+                studentDAO.clear(conn);
+            } catch (SQLException e) {
+                future.completeExceptionally(e);
+            }
+        }).thenAccept(future::complete);
+        return future;
     }
 }

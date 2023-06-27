@@ -1,12 +1,8 @@
 package course_management_swing_ui.services;
 
 import course_management_swing_ui.models.Enrollment;
-import course_management_swing_ui.models.Module;
-import course_management_swing_ui.repositories.DbContext;
 import course_management_swing_ui.repositories.EnrollmentRepository;
 import course_management_swing_ui.repositories.db.DbConnect;
-import course_management_swing_ui.util.exceptions.DuplicateEntityException;
-import course_management_swing_ui.util.exceptions.NotPossibleException;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -16,7 +12,7 @@ import java.util.List;
 
 /**
  * @author Phan Quang Tuan
- * @version 1.2
+ * @version 1.3
  * @Overview Implementation of Service for Enrollment.
  */
 public class EnrollmentService implements Service<Enrollment, Integer> {
@@ -30,8 +26,8 @@ public class EnrollmentService implements Service<Enrollment, Integer> {
     @Override
     public void add(Enrollment obj) {
         try (Connection conn = DbConnect.getConnection()) {
-            enrollmentRepository.add(obj, conn);
-        } catch (SQLException | DuplicateEntityException e) {
+            enrollmentRepository.add(obj, conn).get();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -46,9 +42,9 @@ public class EnrollmentService implements Service<Enrollment, Integer> {
         try (Connection conn = DbConnect.getConnection()) {
             try {
                 conn.setAutoCommit(false);
-                enrollmentRepository.addAll(objs, conn);
+                enrollmentRepository.addAll(objs, conn).get();
                 conn.commit();
-            } catch (SQLException | DuplicateEntityException e) {
+            } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
             }
@@ -65,8 +61,8 @@ public class EnrollmentService implements Service<Enrollment, Integer> {
     @Override
     public Enrollment findById(Integer id) {
         try (Connection conn = DbConnect.getConnection()) {
-            return enrollmentRepository.findById(id, conn);
-        } catch (SQLException | NotPossibleException e) {
+            return enrollmentRepository.findById(id, conn).get();
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
@@ -81,8 +77,8 @@ public class EnrollmentService implements Service<Enrollment, Integer> {
     public List<Enrollment> findById(Collection<Integer> ids) {
         List<Enrollment> enrollments = new ArrayList<>();
         try (Connection conn = DbConnect.getConnection()) {
-            enrollments.addAll(enrollmentRepository.findById(ids, conn));
-        } catch (SQLException | NotPossibleException e) {
+            enrollments.addAll(enrollmentRepository.findById(ids, conn).get());
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return enrollments;
@@ -96,8 +92,8 @@ public class EnrollmentService implements Service<Enrollment, Integer> {
     public List<Enrollment> findAll() {
         List<Enrollment> enrollments = new ArrayList<>();
         try (Connection conn = DbConnect.getConnection()) {
-            enrollments.addAll(enrollmentRepository.findAll(conn));
-        } catch (SQLException | NotPossibleException e) {
+            enrollments.addAll(enrollmentRepository.findAll(conn).get());
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return enrollments;
@@ -111,8 +107,8 @@ public class EnrollmentService implements Service<Enrollment, Integer> {
     @Override
     public void update(Enrollment obj) {
         try (Connection conn = DbConnect.getConnection()) {
-            enrollmentRepository.update(obj, conn);
-        } catch (SQLException e) {
+            enrollmentRepository.update(obj, conn).get();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -127,9 +123,9 @@ public class EnrollmentService implements Service<Enrollment, Integer> {
         try (Connection conn = DbConnect.getConnection()) {
             try {
                 conn.setAutoCommit(false);
-                enrollmentRepository.update(objs, conn);
+                enrollmentRepository.update(objs, conn).get();
                 conn.commit();
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
             }
@@ -146,8 +142,8 @@ public class EnrollmentService implements Service<Enrollment, Integer> {
     @Override
     public void delete(Enrollment obj) {
         try (Connection conn = DbConnect.getConnection()) {
-            enrollmentRepository.delete(obj, conn);
-        } catch (SQLException e) {
+            enrollmentRepository.delete(obj, conn).get();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -162,9 +158,9 @@ public class EnrollmentService implements Service<Enrollment, Integer> {
         try (Connection conn = DbConnect.getConnection()) {
             try {
                 conn.setAutoCommit(false);
-                enrollmentRepository.delete(objs, conn);
+                enrollmentRepository.delete(objs, conn).get();
                 conn.commit();
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
             }
@@ -180,8 +176,8 @@ public class EnrollmentService implements Service<Enrollment, Integer> {
     @Override
     public void deleteAll() {
         try (Connection conn = DbConnect.getConnection()) {
-            enrollmentRepository.deleteAll(conn);
-        } catch (SQLException e) {
+            enrollmentRepository.deleteAll(conn).get();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

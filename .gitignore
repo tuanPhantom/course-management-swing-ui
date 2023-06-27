@@ -1,4 +1,4 @@
 # IDE files and folders
 target
-.idea
+#.idea
 .iml

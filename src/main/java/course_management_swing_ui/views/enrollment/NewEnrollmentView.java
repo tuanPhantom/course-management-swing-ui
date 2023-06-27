@@ -11,6 +11,7 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
+import java.util.Arrays;
 
 import static course_management_swing_ui.repositories.DbContext.moduleDbContext;
 import static course_management_swing_ui.repositories.DbContext.studentDbContext;
@@ -29,9 +30,9 @@ public class NewEnrollmentView implements View {
     private JFrame parentGUI;
     private JTextField txtIm;
     private JTextField txtEm;
-    private JComboBox<?> comboBoxStudent;
+    private JComboBox<Object> comboBoxStudent;
     private String sid;
-    private JComboBox<?> comboBoxModule;
+    private JComboBox<Object> comboBoxModule;
     private String mCode;
     private JButton btnAdd;
 
@@ -178,6 +179,19 @@ public class NewEnrollmentView implements View {
     @Override
     public void shutDown() {
         disposeGUI();
+    }
+
+    @Override
+    public void notifyDataChanged() {
+        comboBoxStudent.removeAllItems();
+        String[] students = studentDbContext.stream().map(Student::getId).toArray(String[]::new);
+        Arrays.stream(students).forEach(s -> comboBoxStudent.addItem(s));
+        comboBoxStudent.setSelectedIndex(-1);
+
+        comboBoxModule.removeAllItems();
+        String[] modules = moduleDbContext.stream().map(Module::getCode).toArray(String[]::new);
+        Arrays.stream(modules).forEach(m -> comboBoxModule.addItem(m));
+        comboBoxModule.setSelectedIndex(-1);
     }
 
     /**

@@ -6,6 +6,7 @@ import course_management_swing_ui.models.Student;
 import course_management_swing_ui.services.EnrollmentService;
 import course_management_swing_ui.services.ModuleService;
 import course_management_swing_ui.services.StudentService;
+import course_management_swing_ui.util.EnumUtil;
 import course_management_swing_ui.util.dto.DtoGenerator;
 import course_management_swing_ui.views.View;
 import course_management_swing_ui.views.ViewManager;
@@ -18,6 +19,8 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowEvent;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static course_management_swing_ui.repositories.DbContext.enrollmentDbContext;
 
@@ -52,7 +55,6 @@ public class EnrollmentController extends BaseController {
 
     /**
      * Handle events of NewEnrollmentView, InitialReportView, AssessmentReportView
-     *
      * @effects <pre>
      * All event's action:
      * Case(s) of NewEnrollmentView
@@ -115,7 +117,12 @@ public class EnrollmentController extends BaseController {
                     View addGUI = NewEnrollmentView.getInstance();
                     if (addGUI == null) {
                         EnrollmentController ec = new EnrollmentController();
-                        EnrollmentController.fetchData();
+                        BaseController.controllers.add(ec);
+                        try {
+                            EnrollmentController.fetchData().get();
+                        } catch (InterruptedException | ExecutionException ex) {
+                            ex.printStackTrace();
+                        }
                         addGUI = NewEnrollmentView.getInstance(view.getGui(), ec);
                         ec.setGui(addGUI);
                         ViewManager.viewMap.put(addGUI.hashCode(), addGUI);
@@ -147,7 +154,11 @@ public class EnrollmentController extends BaseController {
                             deleteEnrollment(enrollments);
                         }
 
-                        fetchData();
+                        try {
+                            fetchData().get();
+                        } catch (InterruptedException | ExecutionException ex) {
+                            ex.printStackTrace();
+                        }
                         // reset views in order to remove row(s)
                         v.notifyDataChanged();
                         setCheckAll(false);
@@ -191,13 +202,21 @@ public class EnrollmentController extends BaseController {
                             }
                         }
                         updateEnrollment(enrollments);
-                        fetchData();
+                        try {
+                            fetchData().get();
+                        } catch (InterruptedException | ExecutionException ex) {
+                            ex.printStackTrace();
+                        }
                         v.notifyDataChanged();
                         setCheckAll(false);
                     }
                     break;
                 case "Refresh Data":
-                    fetchData();
+                    try {
+                        fetchData().get();
+                    } catch (InterruptedException | ExecutionException ex) {
+                        ex.printStackTrace();
+                    }
                     v.notifyDataChanged();
                     setCheckAll(false);
                     break;
@@ -217,7 +236,12 @@ public class EnrollmentController extends BaseController {
                     View addGUI = NewEnrollmentView.getInstance();
                     if (addGUI == null) {
                         EnrollmentController sc = new EnrollmentController();
-                        EnrollmentController.fetchData();
+                        BaseController.controllers.add(sc);
+                        try {
+                            EnrollmentController.fetchData().get();
+                        } catch (InterruptedException | ExecutionException ex) {
+                            ex.printStackTrace();
+                        }
                         addGUI = NewEnrollmentView.getInstance(view.getGui(), sc);
                         sc.setGui(addGUI);
                         ViewManager.viewMap.put(addGUI.hashCode(), addGUI);
@@ -249,7 +273,11 @@ public class EnrollmentController extends BaseController {
                             deleteEnrollment(enrollments);
                         }
 
-                        fetchData();
+                        try {
+                            fetchData().get();
+                        } catch (InterruptedException | ExecutionException ex) {
+                            ex.printStackTrace();
+                        }
                         // reset views in order to remove row(s)
                         v.notifyDataChanged();
                         setCheckAll(false);
@@ -280,13 +308,21 @@ public class EnrollmentController extends BaseController {
                             }
                         }
                         updateEnrollment(enrollments);
-                        fetchData();
+                        try {
+                            fetchData().get();
+                        } catch (InterruptedException | ExecutionException ex) {
+                            ex.printStackTrace();
+                        }
                         v.notifyDataChanged();
                         setCheckAll(false);
                     }
                     break;
                 case "Refresh Data":
-                    fetchData();
+                    try {
+                        fetchData().get();
+                    } catch (InterruptedException | ExecutionException ex) {
+                        ex.printStackTrace();
+                    }
                     v.notifyDataChanged();
                     setCheckAll(false);
                     break;
@@ -312,7 +348,7 @@ public class EnrollmentController extends BaseController {
         if (Enrollment.validateId(id) && Enrollment.validateStudent(student) && Enrollment.validateModule(module) && Enrollment.validateMark(im) && Enrollment.validateMark(em)) {
             try {
                 enrollmentService.add(new Enrollment(id, student, module, im, em));
-                fetchData();
+                fetchData().get();
                 Optional<View> opt1 = ViewManager.viewMap.values().stream().filter(m -> m instanceof InitialReportView).findFirst();
                 Optional<View> opt2 = ViewManager.viewMap.values().stream().filter(m -> m instanceof AssessmentReportView).findFirst();
                 if (opt1.isPresent()) {
@@ -349,7 +385,6 @@ public class EnrollmentController extends BaseController {
 
     /**
      * Get data from the DbContext. More specifically, get all enrollments and save it to enrollmentDbContext.
-     *
      * @modifies DbContext
      * @effects <pre>
      *      Clear old data from DbContext (Student, Module, Enrollment)
@@ -359,21 +394,30 @@ public class EnrollmentController extends BaseController {
      *      Update new data to Dto(s)
      * </pre>
      */
-    public static void fetchData() {
-        System.out.println("----------------------------");
-        enrollmentDbContext.clear();
+    public static CompletableFuture<Void> fetchData() {
+        return CompletableFuture.runAsync(() -> {
+            System.out.println("----------------------------");
+            enrollmentDbContext.clear();
 
-        StudentController.fetchData();
-        ModuleController.fetchData();
-        enrollmentDbContext.addAll(enrollmentService.findAll());
+            CompletableFuture<Void> studentTask = StudentController.fetchData();
+            CompletableFuture<Void> moduleTask = ModuleController.fetchData();
+            try {
+                CompletableFuture.allOf(studentTask, moduleTask).get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+            enrollmentDbContext.addAll(enrollmentService.findAll());
 
-        dtoIR.clear();
-        dtoIR.addAll(DtoGenerator.getDto_initialReport(enrollmentDbContext));
+            dtoIR.clear();
+            dtoIR.addAll(DtoGenerator.getDto_initialReport(enrollmentDbContext));
 
-        dtoAR.clear();
-        dtoAR.addAll(DtoGenerator.getDto_assessmentReport(enrollmentDbContext));
-        System.out.println("fetched new data from the database for: Enrollment");
-        System.out.println("----------------------------");
+            dtoAR.clear();
+            dtoAR.addAll(DtoGenerator.getDto_assessmentReport(enrollmentDbContext));
+            System.out.println("fetched new data from the database for: Enrollment");
+            System.out.println("----------------------------");
+
+            resetOtherControllerViews(EnumUtil.Controller.EnrollmentController);
+        });
     }
 
     /**

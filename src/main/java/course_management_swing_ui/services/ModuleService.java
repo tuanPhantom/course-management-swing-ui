@@ -160,7 +160,7 @@ public class ModuleService implements Service<Module, String> {
                     CompletableFuture<Void> enTask = enrollmentRepository.delete(enrollment, conn);
                     tasks.add(enTask);
                 }
-                CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0]));
+                CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
                 conn.commit();
             } catch (Exception e) {
                 conn.rollback();
@@ -187,7 +187,7 @@ public class ModuleService implements Service<Module, String> {
                 List<String> codes = objs.stream().map(Module::getCode).collect(Collectors.toList());
                 List<Enrollment> enrollments = DbContext.enrollmentDbContext.stream().filter(e -> codes.contains(e.getModule().getCode())).collect(Collectors.toList());
                 CompletableFuture<Void> enTask = enrollmentRepository.delete(enrollments, conn);
-                CompletableFuture.allOf(moduleTask, enTask);
+                CompletableFuture.allOf(moduleTask, enTask).get();
                 conn.commit();
             } catch (Exception e) {
                 conn.rollback();
@@ -209,7 +209,7 @@ public class ModuleService implements Service<Module, String> {
                 conn.setAutoCommit(false);
                 CompletableFuture<Void> moduleTask = moduleRepository.deleteAll(conn);
                 CompletableFuture<Void> enTask = enrollmentRepository.deleteAll(conn);
-                CompletableFuture.allOf(moduleTask, enTask);
+                CompletableFuture.allOf(moduleTask, enTask).get();
                 conn.commit();
             } catch (Exception e) {
                 conn.rollback();

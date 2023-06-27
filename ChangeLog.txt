@@ -1,3 +1,9 @@
+v1.3a improve performance
+Release date: 28/06/2023
+Level: Minor update
+- Data changed in one view can be updated on other views (still miss a case :< )
+- Improve performance
+
 v1.3: asynchronous
 Release date: 27/06/2023
 Level: Major update

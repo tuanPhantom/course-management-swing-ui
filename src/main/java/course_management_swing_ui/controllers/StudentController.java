@@ -1,6 +1,7 @@
 package course_management_swing_ui.controllers;
 
 import course_management_swing_ui.services.StudentService;
+import course_management_swing_ui.util.EnumUtil;
 import course_management_swing_ui.util.dto.*;
 import course_management_swing_ui.models.Student;
 import course_management_swing_ui.views.ViewManager;
@@ -17,6 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Vector;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static course_management_swing_ui.repositories.DbContext.studentDbContext;
 
@@ -48,7 +51,6 @@ public class StudentController extends BaseController {
 
     /**
      * Handle events of NewStudentView, ListStudentView
-     *
      * @effects <pre>
      * All event's action:
      * Case(s) of NewStudentView
@@ -108,7 +110,12 @@ public class StudentController extends BaseController {
                     View addGUI = NewStudentView.getInstance();
                     if (addGUI == null) {
                         StudentController sc = new StudentController();
-                        StudentController.fetchData();
+                        BaseController.controllers.add(sc);
+                        try {
+                            fetchData().get();
+                        } catch (InterruptedException | ExecutionException ex) {
+                            ex.printStackTrace();
+                        }
                         addGUI = NewStudentView.getInstance(view.getGui(), sc);
                         sc.setGui(addGUI);
                         ViewManager.viewMap.put(addGUI.hashCode(), addGUI);
@@ -139,7 +146,11 @@ public class StudentController extends BaseController {
                             deleteStudent(students);
                         }
 
-                        fetchData();
+                        try {
+                            fetchData().get();
+                        } catch (InterruptedException | ExecutionException ex) {
+                            ex.printStackTrace();
+                        }
                         // reset views in order to remove row(s)
                         v.notifyDataChanged();
                         setCheckAll(false);
@@ -178,13 +189,21 @@ public class StudentController extends BaseController {
                             }
                         }
                         updateStudent(students);
-                        fetchData();
+                        try {
+                            fetchData().get();
+                        } catch (InterruptedException | ExecutionException ex) {
+                            ex.printStackTrace();
+                        }
                         v.notifyDataChanged();
                         setCheckAll(false);
                     }
                     break;
                 case "Refresh Data":
-                    fetchData();
+                    try {
+                        fetchData().get();
+                    } catch (InterruptedException | ExecutionException ex) {
+                        ex.printStackTrace();
+                    }
                     v.notifyDataChanged();
                     break;
                 case "Close":
@@ -207,7 +226,7 @@ public class StudentController extends BaseController {
     private boolean addStudent(String name, String dob, String address, String email) {
         try {
             studentService.add(new Student(name, LocalDate.parse(dob), address, email));
-            fetchData();
+            fetchData().get();
             Optional<View> opt = ViewManager.viewMap.values().stream().filter(m -> m instanceof ListStudentView).findFirst();
             if (opt.isPresent()) {
                 ListStudentView v = (ListStudentView) opt.get();
@@ -242,7 +261,6 @@ public class StudentController extends BaseController {
 
     /**
      * Get data from the DbContext. More specifically, get all Student and save it to studentDbContext.
-     *
      * @modifies DbContext.studentDbContext
      * @effects <pre>
      *      Clear old data from DbContext (Student only)
@@ -250,14 +268,18 @@ public class StudentController extends BaseController {
      *      Update new data to this.dto
      * </pre>
      */
-    public static void fetchData() {
-        resetStudentIdCount();
-        studentDbContext.clear();
-        studentDbContext.addAll(studentService.findAll());
+    public static CompletableFuture<Void> fetchData() {
+        return CompletableFuture.runAsync(() -> {
+            resetStudentIdCount();
+            studentDbContext.clear();
+            studentDbContext.addAll(studentService.findAll());
 
-        dto.clear();
-        dto.addAll(DtoGenerator.getDto(studentDbContext));
-        System.out.println("fetched new data from the database for: Student");
+            dto.clear();
+            dto.addAll(DtoGenerator.getDto(studentDbContext));
+            System.out.println("fetched new data from the database for: Student");
+
+            resetOtherControllerViews(EnumUtil.Controller.StudentController);
+        });
     }
 
     /**

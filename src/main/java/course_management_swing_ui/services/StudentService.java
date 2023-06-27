@@ -160,7 +160,7 @@ public class StudentService implements Service<Student, Integer> {
                     CompletableFuture<Void> enTask = enrollmentRepository.delete(enrollment, conn);
                     tasks.add(enTask);
                 }
-                CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0]));
+                CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
                 conn.commit();
             } catch (Exception e) {
                 conn.rollback();
@@ -181,15 +181,15 @@ public class StudentService implements Service<Student, Integer> {
         try (Connection conn = DbConnect.getConnection()) {
             try {
                 conn.setAutoCommit(false);
-                CompletableFuture<Void> studentTask =  studentRepository.delete(objs, conn);
+                CompletableFuture<Void> studentTask = studentRepository.delete(objs, conn);
 
                 // delete enrollments
                 List<Integer> numId = objs.stream().map(Student::getNumericalId).collect(Collectors.toList());
                 List<Enrollment> enrollments = DbContext.enrollmentDbContext.stream().filter(e -> numId.contains(e.getStudent().getNumericalId())).collect(Collectors.toList());
                 CompletableFuture<Void> enTask = enrollmentRepository.delete(enrollments, conn);
-                CompletableFuture.allOf(studentTask, enTask);
+                CompletableFuture.allOf(studentTask, enTask).get();
                 conn.commit();
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
             }
@@ -209,9 +209,9 @@ public class StudentService implements Service<Student, Integer> {
                 conn.setAutoCommit(false);
                 CompletableFuture<Void> studentTask = studentRepository.deleteAll(conn);
                 CompletableFuture<Void> enTask = enrollmentRepository.deleteAll(conn);
-                CompletableFuture.allOf(studentTask, enTask);
+                CompletableFuture.allOf(studentTask, enTask).get();
                 conn.commit();
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
             }

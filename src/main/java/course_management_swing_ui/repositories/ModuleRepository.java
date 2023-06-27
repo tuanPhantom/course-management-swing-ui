@@ -114,7 +114,7 @@ public class ModuleRepository implements Repository<Module, String> {
                 for (String code : codes) {
                     tasks.add(findById(code, conn));
                 }
-                CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0]));
+                CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
                 for (CompletableFuture<Module> task : tasks) {
                     modules.add(task.get());
                 }

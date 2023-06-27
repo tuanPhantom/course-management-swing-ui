@@ -1,5 +1,6 @@
 package course_management_swing_ui;
 
+import course_management_swing_ui.controllers.BaseController;
 import course_management_swing_ui.controllers.MainController;
 import course_management_swing_ui.views.ViewManager;
 import course_management_swing_ui.views.MainWindowView;
@@ -13,7 +14,6 @@ import course_management_swing_ui.views.MainWindowView;
  */
 public class CourseManProg {
     private MainController c;
-
     private MainWindowView g;
 
     /**
@@ -23,6 +23,8 @@ public class CourseManProg {
     public CourseManProg() {
         c = new MainController();
         g = MainWindowView.getInstance(c);
+
+        BaseController.controllers.add(c);
         ViewManager.viewMap.put(g.hashCode(), g);
         c.setGui(g);
     }

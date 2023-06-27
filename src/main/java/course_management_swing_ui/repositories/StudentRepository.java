@@ -114,7 +114,7 @@ public class StudentRepository implements Repository<Student, Integer> {
                 for (Integer id : ids) {
                     tasks.add(findById(id, conn));
                 }
-                CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0]));
+                CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
                 for (CompletableFuture<Student> task : tasks) {
                     students.add(task.get());
                 }

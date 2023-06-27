@@ -5,8 +5,8 @@ import course_management_swing_ui.models.CompulsoryModule;
 import course_management_swing_ui.models.ElectiveModule;
 import course_management_swing_ui.models.Module;
 import course_management_swing_ui.services.ModuleService;
+import course_management_swing_ui.util.EnumUtil;
 import course_management_swing_ui.util.dto.DtoGenerator;
-import course_management_swing_ui.util.exceptions.NotPossibleException;
 import course_management_swing_ui.views.View;
 import course_management_swing_ui.views.ViewManager;
 import course_management_swing_ui.views.module.NewModuleView;
@@ -17,6 +17,8 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowEvent;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static course_management_swing_ui.repositories.DbContext.moduleDbContext;
 
@@ -112,7 +114,12 @@ public class ModuleController extends BaseController {
                     View addGUI = NewModuleView.getInstance();
                     if (addGUI == null) {
                         ModuleController mc = new ModuleController();
-                        ModuleController.fetchData();
+                        BaseController.controllers.add(mc);
+                        try {
+                            ModuleController.fetchData().get();
+                        } catch (InterruptedException | ExecutionException ex) {
+                            ex.printStackTrace();
+                        }
                         addGUI = NewModuleView.getInstance(view.getGui(), mc);
                         mc.setGui(addGUI);
                         ViewManager.viewMap.put(addGUI.hashCode(), addGUI);
@@ -144,7 +151,11 @@ public class ModuleController extends BaseController {
                             deleteModule(modules);
                         }
 
-                        fetchData();
+                        try {
+                            fetchData().get();
+                        } catch (InterruptedException | ExecutionException ex) {
+                            ex.printStackTrace();
+                        }
                         // reset views in order to remove row(s)
                         v.notifyDataChanged();
                         setCheckAll(false);
@@ -195,13 +206,21 @@ public class ModuleController extends BaseController {
                             }
                         }
                         updateModule(modules);
-                        fetchData();
+                        try {
+                            fetchData().get();
+                        } catch (InterruptedException | ExecutionException ex) {
+                            ex.printStackTrace();
+                        }
                         v.notifyDataChanged();
                         setCheckAll(false);
                     }
                     break;
                 case "Refresh Data":
-                    fetchData();
+                    try {
+                        fetchData().get();
+                    } catch (InterruptedException | ExecutionException ex) {
+                        ex.printStackTrace();
+                    }
                     v.notifyDataChanged();
                     setCheckAll(false);
                     break;
@@ -227,7 +246,7 @@ public class ModuleController extends BaseController {
         if (Module.validateName(name) && Module.validateSemester(semester) && Module.validateCredits(credits) && Module.validateModuleType(mt)) {
             try {
                 moduleService.add(ModuleFactory.getInstance().createModule(name, semester, credits, mt, department));
-                fetchData();
+                fetchData().get();
                 Optional<View> opt = ViewManager.viewMap.values().stream().filter(m -> m instanceof ListModuleView).findFirst();
                 if (opt.isPresent()) {
                     ListModuleView v = (ListModuleView) opt.get();
@@ -272,14 +291,18 @@ public class ModuleController extends BaseController {
      *      Update new data to this.dto
      * </pre>
      */
-    public static void fetchData() {
-        resetModuleIdCount();
-        moduleDbContext.clear();
-        moduleDbContext.addAll(moduleService.findAll());
+    public static CompletableFuture<Void> fetchData() {
+        return CompletableFuture.runAsync(() -> {
+            resetModuleIdCount();
+            moduleDbContext.clear();
+            moduleDbContext.addAll(moduleService.findAll());
 
-        dto.clear();
-        dto.addAll(DtoGenerator.getDto_module(moduleDbContext));
-        System.out.println("fetched new data from the database for: Module");
+            dto.clear();
+            dto.addAll(DtoGenerator.getDto_module(moduleDbContext));
+            System.out.println("fetched new data from the database for: Module");
+
+            resetOtherControllerViews(EnumUtil.Controller.ModuleController);
+        });
     }
 
     /**

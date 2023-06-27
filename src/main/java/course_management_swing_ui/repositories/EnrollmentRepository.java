@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static course_management_swing_ui.repositories.DbContext.*;
@@ -130,7 +131,7 @@ public class EnrollmentRepository implements Repository<Enrollment, Integer> {
                 for (Integer id : ids) {
                     tasks.add(findById(id, conn));
                 }
-                CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0]));
+                CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
                 for (CompletableFuture<Enrollment> task : tasks) {
                     enrollments.add(task.get());
                 }
@@ -156,6 +157,11 @@ public class EnrollmentRepository implements Repository<Enrollment, Integer> {
     public CompletableFuture<List<Enrollment>> findAll(Connection conn) throws SQLException, NotPossibleException {
         CompletableFuture<List<Enrollment>> future = new CompletableFuture<>();
         CompletableFuture.supplyAsync(() -> {
+            Map<Integer, Student> studentMap = studentDbContext.stream()
+                    .collect(Collectors.toMap(Student::getNumericalId, Function.identity()));
+            Map<String, Module> moduleMap = moduleDbContext.stream()
+                    .collect(Collectors.toMap(Module::getCode, Function.identity()));
+
             try {
                 List<Enrollment> enrollments = new ArrayList<>();
                 List<?> allEnrollmentData = enrollmentDAO.all(conn);
@@ -163,12 +169,12 @@ public class EnrollmentRepository implements Repository<Enrollment, Integer> {
                     List<?> o = (List<?>) enrollmentData;
                     int id = (int) o.get(0);
                     int student_id = (int) o.get(1);
-                    Optional<Student> optS = studentDbContext.stream().filter(s -> s.getNumericalId() == student_id).findFirst();
-                    Student s = optS.isPresent() ? optS.get() : studentDao.read(student_id, conn);
+                    Student s = studentMap.get(student_id);
+                    if (s == null) s = studentDao.read(student_id, conn);
 
                     String module_code = (String) o.get(2);
-                    Optional<Module> optM = moduleDbContext.stream().filter(m -> m.getCode().equals(module_code)).findFirst();
-                    Module m = optM.isPresent() ? optM.get() : moduleDAO.read(module_code, conn);
+                    Module m = moduleMap.get(module_code);
+                    if (m == null) m = moduleDAO.read(module_code, conn);
                     try {
                         if (s != null && m != null) {
                             enrollments.add(new Enrollment(id, s, m, (double) o.get(3), (double) o.get(4)));

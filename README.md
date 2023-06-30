@@ -16,7 +16,7 @@ https://drive.google.com/drive/folders/12ZbHg7MRTInRFU9tkUYIPtQkLRQFvbmo?usp=sha
 ![img.png](readme_img/1.png)
 
 ## What's new
-V1.3a is released!
+V1.3b is released!
 
 Read the file `ChangeLog.txt` for details.
 

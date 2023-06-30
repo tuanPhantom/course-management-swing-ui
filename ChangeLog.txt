@@ -1,4 +1,9 @@
-v1.3a improve performance
+v1.3b: patch
+Release date: 01/07/2023
+Level: Patch
+- Data changed in one view can be updated on other views (100%)
+
+v1.3a: improve performance
 Release date: 28/06/2023
 Level: Minor update
 - Data changed in one view can be updated on other views (still miss a case :< )

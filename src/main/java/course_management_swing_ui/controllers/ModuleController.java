@@ -7,6 +7,7 @@ import course_management_swing_ui.models.Module;
 import course_management_swing_ui.services.ModuleService;
 import course_management_swing_ui.util.EnumUtil;
 import course_management_swing_ui.util.dto.DtoGenerator;
+import course_management_swing_ui.util.entitiesMappers.EnrollmentMapper;
 import course_management_swing_ui.views.View;
 import course_management_swing_ui.views.ViewManager;
 import course_management_swing_ui.views.module.NewModuleView;
@@ -20,6 +21,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import static course_management_swing_ui.repositories.DbContext.enrollmentDbContext;
 import static course_management_swing_ui.repositories.DbContext.moduleDbContext;
 
 /**
@@ -301,6 +303,11 @@ public class ModuleController extends BaseController {
             dto.addAll(DtoGenerator.getDto_module(moduleDbContext));
             System.out.println("fetched new data from the database for: Module");
 
+            EnrollmentMapper.getInstance().mapModule();
+            EnrollmentController.dtoIR.clear();
+            EnrollmentController.dtoIR.addAll(DtoGenerator.getDto_initialReport(enrollmentDbContext));
+            EnrollmentController.dtoAR.clear();
+            EnrollmentController.dtoAR.addAll(DtoGenerator.getDto_assessmentReport(enrollmentDbContext));
             resetOtherControllerViews(EnumUtil.Controller.ModuleController);
         });
     }

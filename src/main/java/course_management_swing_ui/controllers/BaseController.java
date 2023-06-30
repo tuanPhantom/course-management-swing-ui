@@ -65,7 +65,7 @@ public abstract class BaseController extends WindowAdapter implements ActionList
             default:
                 return;
         }
-        System.out.println(modifies);
+//        System.out.println(modifies);
         modifies.forEach(v -> {
             if (v == null) return;
             v.notifyDataChanged();

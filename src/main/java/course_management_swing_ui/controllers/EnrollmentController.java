@@ -399,8 +399,8 @@ public class EnrollmentController extends BaseController {
             System.out.println("----------------------------");
             enrollmentDbContext.clear();
 
-            CompletableFuture<Void> studentTask = StudentController.fetchData();
-            CompletableFuture<Void> moduleTask = ModuleController.fetchData();
+            CompletableFuture<Void> studentTask = StudentController.fetchData2();
+            CompletableFuture<Void> moduleTask = ModuleController.fetchData2();
             try {
                 CompletableFuture.allOf(studentTask, moduleTask).get();
             } catch (InterruptedException | ExecutionException e) {

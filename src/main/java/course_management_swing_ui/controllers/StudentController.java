@@ -289,6 +289,20 @@ public class StudentController extends BaseController {
         });
     }
 
+    public static CompletableFuture<Void> fetchData2() {
+        return CompletableFuture.runAsync(() -> {
+            resetStudentIdCount();
+            studentDbContext.clear();
+            studentDbContext.addAll(studentService.findAll());
+
+            dto.clear();
+            dto.addAll(DtoGenerator.getDto(studentDbContext));
+            System.out.println("fetched new data from the database for: Student");
+
+            resetOtherControllerViews(EnumUtil.Controller.StudentController);
+        });
+    }
+
     /**
      * @effects delete all IdCount stored in the static HashMap called Student.idCount
      */

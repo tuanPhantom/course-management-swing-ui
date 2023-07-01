@@ -312,6 +312,20 @@ public class ModuleController extends BaseController {
         });
     }
 
+    public static CompletableFuture<Void> fetchData2() {
+        return CompletableFuture.runAsync(() -> {
+            resetModuleIdCount();
+            moduleDbContext.clear();
+            moduleDbContext.addAll(moduleService.findAll());
+
+            dto.clear();
+            dto.addAll(DtoGenerator.getDto_module(moduleDbContext));
+            System.out.println("fetched new data from the database for: Module");
+
+            resetOtherControllerViews(EnumUtil.Controller.ModuleController);
+        });
+    }
+
     /**
      * @effects delete all suffixes stored in the static HashMap called Module.suffixes
      */

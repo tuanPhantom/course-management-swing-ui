@@ -298,8 +298,6 @@ public class StudentController extends BaseController {
             dto.clear();
             dto.addAll(DtoGenerator.getDto(studentDbContext));
             System.out.println("fetched new data from the database for: Student");
-
-            resetOtherControllerViews(EnumUtil.Controller.StudentController);
         });
     }
 

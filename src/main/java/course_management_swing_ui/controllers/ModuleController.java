@@ -321,8 +321,6 @@ public class ModuleController extends BaseController {
             dto.clear();
             dto.addAll(DtoGenerator.getDto_module(moduleDbContext));
             System.out.println("fetched new data from the database for: Module");
-
-            resetOtherControllerViews(EnumUtil.Controller.ModuleController);
         });
     }
 

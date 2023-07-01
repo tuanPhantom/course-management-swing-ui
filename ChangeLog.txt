@@ -1,3 +1,8 @@
+v1.3c: patch
+Release date: 02/07/2023
+Level: Patch
+- Fix bug: Exception when adding a new student/module while the row was selected in the initial report.
+
 v1.3b: patch
 Release date: 01/07/2023
 Level: Patch
